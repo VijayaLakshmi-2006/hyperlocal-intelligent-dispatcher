@@ -1,0 +1,201 @@
+@baseUrl = http://localhost:5002
+@customerToken = paste_customer_token_here
+@agentToken = paste_agent_token_here
+@adminToken = paste_admin_token_here
+@orderId = paste_order_id_here
+@shopId = paste_shop_id_here
+@productId = paste_product_id_here
+
+### USER REGISTER - CUSTOMER
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "role": "customer"
+}
+
+### USER REGISTER - AGENT
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Agent One",
+  "email": "agent@example.com",
+  "password": "password123",
+  "role": "agent"
+}
+
+### USER REGISTER - ADMIN
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin",
+  "email": "admin@example.com",
+  "password": "password123",
+  "role": "admin"
+}
+
+### LOGIN
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### GET USER PROFILE
+GET {{baseUrl}}/api/auth/profile
+Authorization: Bearer {{customerToken}}
+
+### AGENT UPDATE LIVE LOCATION
+PUT {{baseUrl}}/api/agents/location
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "latitude": 17.4483,
+  "longitude": 78.3915
+}
+
+### FIND NEARBY AVAILABLE AGENTS
+GET {{baseUrl}}/api/agents/nearby?latitude=17.4483&longitude=78.3915&radius=5000
+Authorization: Bearer {{customerToken}}
+
+### CREATE ORDER WITH COORDINATES
+POST {{baseUrl}}/api/orders/create
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "pickupLocation": {
+    "address": "Miyapur Metro Station, Hyderabad",
+    "latitude": 17.4969,
+    "longitude": 78.3618
+  },
+  "deliveryLocation": {
+    "address": "KPHB Colony, Hyderabad",
+    "latitude": 17.4933,
+    "longitude": 78.3996
+  },
+  "packageDetails": "Food Package",
+  "price": 250,
+  "paymentMethod": "cash"
+}
+
+### CREATE ORDER - BACKWARD COMPATIBLE ADDRESS ONLY
+POST {{baseUrl}}/api/orders/create
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "pickupAddress": "Miyapur",
+  "deliveryAddress": "KPHB",
+  "packageDetails": "Food Package",
+  "price": 250,
+  "paymentMethod": "cash"
+}
+
+### GET MY ORDERS
+GET {{baseUrl}}/api/orders/my-orders
+Authorization: Bearer {{customerToken}}
+
+### AGENT GET PENDING ORDERS
+GET {{baseUrl}}/api/orders/pending
+Authorization: Bearer {{agentToken}}
+
+### AGENT ACCEPT ORDER
+PUT {{baseUrl}}/api/orders/accept/{{orderId}}
+Authorization: Bearer {{agentToken}}
+
+### AGENT UPDATE ORDER STATUS - PICKED UP
+PUT {{baseUrl}}/api/orders/update-status/{{orderId}}
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "status": "picked_up"
+}
+
+### AGENT UPDATE ORDER STATUS - OUT FOR DELIVERY
+PUT {{baseUrl}}/api/orders/update-status/{{orderId}}
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "status": "out_for_delivery"
+}
+
+### AGENT UPDATE ORDER STATUS - DELIVERED
+PUT {{baseUrl}}/api/orders/update-status/{{orderId}}
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "status": "delivered"
+}
+
+### CUSTOMER / AGENT / ADMIN TRACK ORDER
+GET {{baseUrl}}/api/orders/track/{{orderId}}
+Authorization: Bearer {{customerToken}}
+
+### ADMIN MAP DASHBOARD
+GET {{baseUrl}}/api/admin/map-dashboard
+Authorization: Bearer {{adminToken}}
+
+### ADMIN ONLINE AGENTS
+GET {{baseUrl}}/api/agents/online
+Authorization: Bearer {{adminToken}}
+
+### ADMIN SEED DEMO SHOPS
+POST {{baseUrl}}/api/shops/seed-demo
+Authorization: Bearer {{adminToken}}
+
+### GET SHOPS
+GET {{baseUrl}}/api/shops
+Authorization: Bearer {{customerToken}}
+
+### ASK HYPER - AI SEARCH
+POST {{baseUrl}}/api/ai/search
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "query": "I need paracetamol urgently",
+  "customerLocation": {
+    "address": "Madhapur, Hyderabad",
+    "latitude": 17.4483,
+    "longitude": 78.3915
+  }
+}
+
+### ASK HYPER - ONE CLICK ORDER
+POST {{baseUrl}}/api/ai/order
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "shopId": "{{shopId}}",
+  "productId": "{{productId}}",
+  "quantity": 1,
+  "query": "I need paracetamol urgently",
+  "customerLocation": {
+    "address": "Madhapur, Hyderabad",
+    "latitude": 17.4483,
+    "longitude": 78.3915
+  },
+  "intent": {
+    "product": "Paracetamol",
+    "category": "Medicine",
+    "urgency": "High",
+    "budget": null
+  }
+}
+
+### ADMIN AI ANALYTICS
+GET {{baseUrl}}/api/ai/analytics
+Authorization: Bearer {{adminToken}}
