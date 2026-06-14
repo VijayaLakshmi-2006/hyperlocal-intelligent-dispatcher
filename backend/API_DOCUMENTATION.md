@@ -1,5 +1,458 @@
 # Hyper Local Delivery Dispatcher API
 
+# 🔧 Backend Architecture
+
+The HyperDispatch backend is built using **Node.js, Express.js, MongoDB, and Mongoose** following a modular MVC architecture.
+
+## 📁 Backend Folder Structure
+
+```bash
+backend/
+│
+├── config/
+│   ├── db.js
+│   └── environment.js
+│
+├── controllers/
+│   ├── authController.js
+│   ├── orderController.js
+│   ├── shopController.js
+│   ├── userController.js
+│   └── aiController.js
+│
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── errorMiddleware.js
+│   └── validationMiddleware.js
+│
+├── models/
+│   ├── User.js
+│   ├── Shop.js
+│   ├── Product.js
+│   ├── Order.js
+│   ├── DeliveryAgent.js
+│   └── Address.js
+│
+├── routes/
+│   ├── authRoutes.js
+│   ├── orderRoutes.js
+│   ├── shopRoutes.js
+│   ├── userRoutes.js
+│   └── aiRoutes.js
+│
+├── services/
+│   ├── aiService.js
+│   ├── dispatchService.js
+│   ├── locationService.js
+│   └── paymentService.js
+│
+├── utils/
+│   ├── distanceCalculator.js
+│   ├── responseHandler.js
+│   └── logger.js
+│
+└── server.js
+```
+
+---
+
+# 🗄️ Database Design
+
+MongoDB is used as the primary database.
+
+---
+
+## 👤 User Schema
+
+Stores customer account information.
+
+```javascript
+{
+  _id,
+  name,
+  email,
+  password,
+  phone,
+  role,
+  addresses: [],
+  createdAt,
+  updatedAt
+}
+```
+
+### Fields
+
+| Field     | Type            |
+| --------- | --------------- |
+| name      | String          |
+| email     | String          |
+| password  | String (Hashed) |
+| phone     | String          |
+| role      | String          |
+| addresses | Array           |
+
+---
+
+## 🏪 Shop Schema
+
+Stores nearby shop information.
+
+```javascript
+{
+  _id,
+  shopName,
+  ownerName,
+  category,
+  address,
+  location,
+  rating,
+  products,
+  isOpen,
+  createdAt
+}
+```
+
+### Location
+
+```javascript
+{
+  latitude,
+  longitude
+}
+```
+
+---
+
+## 📦 Product Schema
+
+Stores inventory available in local shops.
+
+```javascript
+{
+  _id,
+  name,
+  category,
+  description,
+  image,
+  price,
+  stock,
+  shopId,
+  createdAt
+}
+```
+
+---
+
+## 🚚 Delivery Agent Schema
+
+Stores delivery partner information.
+
+```javascript
+{
+  _id,
+  name,
+  phone,
+  vehicleType,
+  currentLocation,
+  availabilityStatus,
+  assignedOrders,
+  rating
+}
+```
+
+### Availability Status
+
+```text
+Available
+Busy
+Offline
+```
+
+---
+
+## 📍 Address Schema
+
+Stores user delivery locations.
+
+```javascript
+{
+  _id,
+  userId,
+  flatNumber,
+  buildingName,
+  street,
+  landmark,
+  city,
+  state,
+  pincode,
+  latitude,
+  longitude
+}
+```
+
+---
+
+## 🛒 Order Schema
+
+Core schema for HyperDispatch.
+
+```javascript
+{
+  _id,
+  orderId,
+  userId,
+  shopId,
+  deliveryAgentId,
+
+  items: [
+    {
+      productId,
+      name,
+      quantity,
+      price
+    }
+  ],
+
+  deliveryAddress,
+
+  subtotal,
+  deliveryFee,
+  tax,
+  totalAmount,
+
+  paymentMethod,
+  paymentStatus,
+
+  orderStatus,
+
+  estimatedDeliveryTime,
+
+  createdAt,
+  updatedAt,
+  deliveredAt,
+  cancelledAt
+}
+```
+
+---
+
+# 📋 Order Status Flow
+
+```text
+Placed
+↓
+Confirmed
+↓
+Preparing
+↓
+Agent Assigned
+↓
+Picked Up
+↓
+Out For Delivery
+↓
+Delivered
+```
+
+Cancelled orders can occur at:
+
+```text
+Placed
+Confirmed
+Agent Assigned
+```
+
+---
+
+# 💳 Payment System
+
+Supported payment methods:
+
+### Online Payments
+
+* UPI
+* Google Pay
+* PhonePe
+* Paytm
+* Debit Cards
+* Credit Cards
+
+### Offline Payments
+
+* Cash On Delivery (COD)
+
+Payment Status:
+
+```text
+Pending
+Paid
+Failed
+Refunded
+```
+
+---
+
+# 🤖 AI Shopping Assistant Workflow
+
+```text
+User Query
+↓
+AI Processing
+↓
+Intent Detection
+↓
+Product Identification
+↓
+Store Matching
+↓
+Cart Generation
+↓
+Checkout
+```
+
+Example:
+
+```text
+"Birthday party snacks for 10 people under ₹1500"
+```
+
+AI Generates:
+
+```text
+Cake
+Soft Drinks
+Chips
+Biscuits
+Ice Cream
+Paper Plates
+```
+
+and adds products to cart.
+
+---
+
+# ⚡ Hyperlocal Dispatch Engine
+
+The dispatch engine automatically selects:
+
+1. Nearest Store
+2. Available Inventory
+3. Available Delivery Agent
+4. Shortest Route
+
+Selection Formula:
+
+```text
+Distance = 50%
+Inventory Availability = 30%
+Agent Availability = 20%
+```
+
+---
+
+# 🗺️ Location Intelligence
+
+Features:
+
+* Geolocation
+* Address Geocoding
+* Delivery Radius Validation
+* Store Proximity Search
+
+Supported Radius:
+
+```text
+1km – 5km
+```
+
+Beyond 5km:
+
+```text
+Store unavailable for ultra-fast delivery
+```
+
+---
+
+# 🔒 Security Features
+
+### Authentication
+
+* JWT Tokens
+* Password Hashing
+* Protected Routes
+
+### Security Measures
+
+* Request Validation
+* Input Sanitization
+* Role-Based Access Control
+* Secure API Communication
+
+---
+
+# 📡 REST API Overview
+
+## Authentication
+
+```http
+POST /api/auth/register
+POST /api/auth/login
+```
+
+## Shops
+
+```http
+GET /api/shops
+GET /api/shops/:id
+```
+
+## Products
+
+```http
+GET /api/products
+GET /api/products/:id
+```
+
+## Orders
+
+```http
+POST /api/orders/create
+GET /api/orders
+GET /api/orders/:id
+PATCH /api/orders/:id/status
+DELETE /api/orders/:id/cancel
+```
+
+## AI Assistant
+
+```http
+POST /api/ai/shopping-assistant
+```
+
+---
+
+# 🚀 Backend Highlights
+
+✅ MVC Architecture
+
+✅ MongoDB Database
+
+✅ JWT Authentication
+
+✅ AI Shopping Assistant Integration
+
+✅ Hyperlocal Dispatch Logic
+
+✅ Order Lifecycle Management
+
+✅ Payment Management
+
+✅ Location-Aware Delivery
+
+✅ Scalable REST APIs
+
+✅ Production-Ready Architecture
+
 The project now supports an AI-powered local commerce flow: customers describe what they need, the AI extracts product intent, nearby shops are searched and ranked, and one-click ordering starts the existing delivery workflow.
 
 ## Setup
