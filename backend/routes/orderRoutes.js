@@ -32,7 +32,8 @@ import {
   assignAgentToOrder,
   pickupOrder,
   outForDeliveryOrder,
-  deliverOrder
+  deliverOrder,
+  cancelOrder
 } from "../controllers/orderController.js";
 
 orderRouter.patch("/:orderId/confirm", protect, confirmOrder);
@@ -40,5 +41,6 @@ orderRouter.patch("/:orderId/assign-agent", protect, assignAgentToOrder);
 orderRouter.patch("/:orderId/pickup", protect, pickupOrder);
 orderRouter.patch("/:orderId/out-for-delivery", protect, outForDeliveryOrder);
 orderRouter.patch("/:orderId/deliver", protect, deliverOrder);
+orderRouter.patch("/:orderId/cancel", protect, authorizeRoles("customer"), cancelOrder);
 
 export default orderRouter;

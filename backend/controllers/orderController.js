@@ -6,6 +6,7 @@ import {
   toGeoPoint,
 } from "../utils/location.js";
 import { emitSocketEvent } from "../utils/socket.js";
+import Shop from "../models/shopModel.js";
 
 const populateOrder = (query) =>
   query
@@ -39,7 +40,11 @@ export const createOrder = async (req, res) => {
       pickupAddress,
       deliveryAddress,
       packageDetails,
+      commerceItems,
       price,
+      deliveryFee,
+      platformFee,
+      taxAmount,
       paymentMethod,
       shopId,
     } = req.body;
@@ -59,21 +64,51 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const closestAgent = await findClosestAvailableAgent(normalizedPickup.value);
+    // AI Intelligent Store Selection if shopId not provided
+    let finalShopId = shopId;
+    let finalPickupLoc = normalizedPickup.value;
+    
+    if (!finalShopId) {
+      // Find nearest store
+      const nearestShop = await Shop.findOne({
+        isActive: true,
+        location: {
+          $near: {
+            $geometry: toGeoPoint(normalizedDelivery.value),
+            $maxDistance: 5000 // 5km radius
+          }
+        }
+      });
+      
+      if (nearestShop) {
+        finalShopId = nearestShop._id;
+        finalPickupLoc = {
+          address: nearestShop.address,
+          latitude: nearestShop.location.coordinates[1],
+          longitude: nearestShop.location.coordinates[0],
+        };
+      }
+    }
+
+    const closestAgent = await findClosestAvailableAgent(finalPickupLoc);
 
     const order = await Order.create({
       customer: req.user._id,
       assignedAgent: null, // Don't assign right away, wait for simulated assignment
-      pickupAddress: normalizedPickup.value.address,
+      pickupAddress: finalPickupLoc.address,
       deliveryAddress: normalizedDelivery.value.address,
-      pickupLocation: normalizedPickup.value,
+      pickupLocation: finalPickupLoc,
       deliveryLocation: normalizedDelivery.value,
-      pickupGeoLocation: toGeoPoint(normalizedPickup.value),
+      pickupGeoLocation: toGeoPoint(finalPickupLoc),
       deliveryGeoLocation: toGeoPoint(normalizedDelivery.value),
       packageDetails,
+      commerceItems: commerceItems || [],
       price,
+      deliveryFee: deliveryFee || 0,
+      platformFee: platformFee || 0,
+      taxAmount: taxAmount || 0,
       paymentMethod,
-      shop: shopId || null,
+      shop: finalShopId || null,
       status: "PLACED",
     });
 
@@ -483,6 +518,53 @@ export const deliverOrder = async (req, res) => {
     emitSocketEvent("orderDelivered", { order }, [`order:${order._id}`]);
 
     res.status(200).json({ message: "Order Delivered", order });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason } = req.body;
+    
+    const order = await Order.findById(orderId).populate("customer", "name email phone role");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order Not Found" });
+    }
+
+    if (order.customer._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to cancel this order" });
+    }
+
+    // Stage checks
+    if (["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"].includes(order.status)) {
+      return res.status(400).json({ message: "Order cannot be cancelled at this stage" });
+    }
+
+    order.status = "CANCELLED";
+    if (reason) {
+      order.cancellationReason = reason;
+    }
+    await order.save();
+
+    // If agent was assigned, free them
+    if (order.assignedAgent) {
+      await Agent.findOneAndUpdate(
+        { user: order.assignedAgent },
+        {
+          $set: { isAvailable: true, activeOrder: null }
+        }
+      );
+    }
+
+    emitSocketEvent("orderStatusChanged", { order, status: "CANCELLED" }, [
+      "admin:dashboard",
+      `order:${order._id}`,
+    ]);
+
+    res.status(200).json({ message: "Order Cancelled", order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

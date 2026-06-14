@@ -77,7 +77,16 @@ export default function Payment() {
           longitude: 78.40,
         },
         packageDetails: cartItems.map(i => `${i.quantity}x ${i.name}`).join(', '),
+        commerceItems: cartItems.map(item => ({
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          category: item.category || 'General'
+        })),
         price: grandTotal,
+        deliveryFee: deliveryFee || 0,
+        platformFee: platformFee || 0,
+        taxAmount: taxAmount || 0,
         paymentMethod: method === 'cod' ? 'cash' : 'online',
         shopId: cartItems[0]?.store?._id,
       };
@@ -409,7 +418,6 @@ export default function Payment() {
                 </div>
               </div>
 
-              {/* Pay Button */}
               <button
                 id="pay-now-btn"
                 onClick={handlePay}
@@ -421,12 +429,12 @@ export default function Payment() {
                 {processing ? (
                   <>
                     <span className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                    Processing Payment...
+                    {method === 'cod' ? 'Confirming Order...' : 'Processing Payment...'}
                   </>
                 ) : (
                   <>
                     <Lock size={18} />
-                    Pay ₹{grandTotal} Securely
+                    {method === 'cod' ? 'Confirm COD Order' : `Pay ₹${grandTotal} Securely`}
                     <ChevronRight size={18} />
                   </>
                 )}

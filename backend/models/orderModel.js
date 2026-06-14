@@ -2,19 +2,16 @@ import { Schema, model, Types } from "mongoose";
 
 const addressLocationSchema = new Schema(
   {
-    address: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    latitude: {
-      type: Number,
-      default: null,
-    },
-    longitude: {
-      type: Number,
-      default: null,
-    },
+    address: { type: String, trim: true, default: "" }, // Legacy
+    fullAddress: { type: String, trim: true, default: "" },
+    flatNumber: { type: String, trim: true, default: "" },
+    apartmentName: { type: String, trim: true, default: "" },
+    streetName: { type: String, trim: true, default: "" },
+    landmark: { type: String, trim: true, default: "" },
+    area: { type: String, trim: true, default: "" },
+    city: { type: String, trim: true, default: "" },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
   },
   {
     _id: false,
@@ -156,6 +153,21 @@ const orderSchema = new Schema(
       required: true,
     },
 
+    deliveryFee: {
+      type: Number,
+      default: 0,
+    },
+
+    platformFee: {
+      type: Number,
+      default: 0,
+    },
+
+    taxAmount: {
+      type: Number,
+      default: 0,
+    },
+
     paymentMethod: {
       type: String,
       enum: ["cash", "online"],
@@ -180,6 +192,12 @@ const orderSchema = new Schema(
         "CANCELLED"
       ],
       default: "PLACED",
+    },
+
+    cancellationReason: {
+      type: String,
+      trim: true,
+      default: null,
     },
 
     deliveryAgent: {

@@ -59,6 +59,7 @@ export const orderAPI = {
   pickup:        (orderId)  => api.patch(`/api/orders/${orderId}/pickup`),
   outForDelivery:(orderId)  => api.patch(`/api/orders/${orderId}/out-for-delivery`),
   deliver:       (orderId)  => api.patch(`/api/orders/${orderId}/deliver`),
+  cancel:        (orderId, payload) => api.patch(`/api/orders/${orderId}/cancel`, payload),
 }
 
 /* ===================== AGENTS ===================== */

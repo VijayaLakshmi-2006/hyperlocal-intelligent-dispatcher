@@ -30,7 +30,7 @@ export default function StoreCard({ store }) {
   // Mock deterministic distance/ETA based on store ID
   const seed = store._id ? store._id.charCodeAt(store._id.length - 1) : 0;
   const distance = ((seed % 35) / 10 + 0.5).toFixed(1);
-  const etaMins = distance < 1 ? '8–10' : distance < 2 ? '12–15' : distance < 3.5 ? '18–22' : '25–30';
+  const etaMins = distance <= 3 ? '5–8' : distance <= 5 ? '8–12' : '15–20';
 
   const handleAdd = async (product) => {
     if (!store.isOpen) return;

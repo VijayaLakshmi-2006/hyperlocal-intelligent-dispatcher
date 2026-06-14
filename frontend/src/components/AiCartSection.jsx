@@ -5,12 +5,79 @@ import { Sparkles, ShoppingCart, RefreshCw, CheckCircle, AlertCircle, MapPin } f
 import { aiCartAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 
-const EXAMPLES = [
-  'Need snacks for 5 friends under ₹500',
-  'Ingredients for chicken biryani for 4 people',
-  'Monthly groceries for one person',
-  'Healthy breakfast items for a week',
-];
+const promptCategories = {
+  '🛒 Groceries': [
+    'Weekly groceries for a family of 4 under ₹2500',
+    'Monthly groceries for one person',
+    'Essentials needed for a new apartment',
+    'Grocery items for hostel students for 2 weeks',
+    'Basic kitchen restocking items',
+    'Groceries for making breakfast for a week',
+    'Ingredients needed for South Indian meals for 3 days',
+    'Grocery shopping for a vegetarian family'
+  ],
+  '🥦 Vegetables': [
+    'Vegetables needed for a week for 4 people',
+    'Fresh vegetables for making mixed curry',
+    'Vegetables for healthy weight-loss meals',
+    'Vegetables required for lunch and dinner for 3 days',
+    'Seasonal vegetables under ₹300',
+    'Vegetables for preparing sambar and curry'
+  ],
+  '🍎 Fruits': [
+    'Fruits for a healthy week-long diet',
+    'Fruits rich in Vitamin C',
+    'Fresh fruits for a family of 5',
+    'Fruits for a child’s lunch box',
+    'Mixed fruit basket under ₹500',
+    'Fruits suitable for diabetic-friendly diets'
+  ],
+  '💊 Medical': [
+    'I have a cold and fever, suggest common essentials',
+    'First aid kit items for home',
+    'Medicines and supplies for headache relief',
+    'Health essentials for elderly parents',
+    'Baby care and medical essentials',
+    'Recovery essentials after viral fever',
+    'Basic pharmacy items every home should have',
+    'Stomach upset care essentials'
+  ],
+  '🔌 Electronics': [
+    'Need a fast charger for my Android phone',
+    'Phone accessories under ₹1000',
+    'Laptop work-from-home essentials',
+    'Mobile charging setup for travel',
+    'Emergency power backup accessories',
+    'Earphones with good microphone under ₹1500',
+    'Computer accessories for students',
+    'Gaming accessories under ₹2000'
+  ],
+  '🍔 Fast Food': [
+    'Snacks for a movie night with 5 friends',
+    'Fast food for a birthday party',
+    'Evening snacks under ₹500',
+    'Street food items for a small gathering',
+    'Late-night food cravings',
+    'Burgers and fries for 3 people',
+    'Party snacks and soft drinks',
+    'Weekend treat for family'
+  ],
+  '🎉 Occasions': [
+    'Birthday party snacks for 20 guests under ₹3000',
+    'Birthday celebration items for kids',
+    'Cake, snacks and drinks for a house party',
+    'Last-minute birthday party essentials',
+    'Ingredients for chicken biryani for 6 people',
+    'Ingredients for veg biryani for 4 people',
+    'Complete biryani preparation shopping list',
+    'Biryani party ingredients under ₹1500',
+    'Diwali celebration essentials',
+    'Sankranti festival shopping list',
+    'Festival snacks and sweets ingredients',
+    'Puja essentials for home'
+  ]
+};
+
 
 const LOADING_STEPS = [
   { text: 'Analyzing your request...', icon: '🧠' },
@@ -252,6 +319,7 @@ export default function AiCartSection() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('🛒 Groceries');
   const { addToCart } = useCart();
   const inputRef = useRef(null);
   const loadingTimerRef = useRef(null);
@@ -445,13 +513,30 @@ export default function AiCartSection() {
                 </div>
 
                 <div>
+                  <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Categories</p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {Object.keys(promptCategories).map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`text-sm px-4 py-2 rounded-full font-medium transition-all ${
+                          activeCategory === cat
+                            ? 'bg-primary-600 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
                   <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Suggestions</p>
-                  <div className="flex flex-wrap gap-2">
-                    {EXAMPLES.map((ex) => (
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {promptCategories[activeCategory].map((ex) => (
                       <button
                         key={ex}
                         onClick={() => handleGenerate(ex)}
-                        className="text-sm px-4 py-2 bg-gray-50 text-gray-700 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-colors font-medium"
+                        className="text-left text-sm px-4 py-3 bg-gray-50 text-gray-700 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-colors font-medium truncate"
                       >
                         {ex}
                       </button>

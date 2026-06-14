@@ -21,8 +21,17 @@ export default function Checkout() {
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
-  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [flatNumber, setFlatNumber] = useState('')
+  const [apartmentName, setApartmentName] = useState('')
+  const [streetName, setStreetName] = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [area, setArea] = useState('')
+  const [city, setCity] = useState('Hyderabad')
   const [deliveryLocation, setDeliveryLocation] = useState(null)
+
+  const getFullAddress = () => {
+    return [flatNumber, apartmentName, streetName, landmark, area, city].filter(Boolean).join(', ')
+  }
   const [instructions, setInstructions] = useState('')
   const [selectedInstruction, setSelectedInstruction] = useState('')
   const [contactName, setContactName] = useState(user?.name || '')
@@ -46,10 +55,11 @@ export default function Checkout() {
   }
 
   const handleLocateAddress = async () => {
-    if (!deliveryAddress.trim()) return toast.error('Please enter an address first.')
+    const addressQuery = getFullAddress()
+    if (!addressQuery.trim()) return toast.error('Please enter an address first.')
     setLocating(true)
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(deliveryAddress)}`)
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
       const data = await response.json()
       if (data?.length > 0) {
         setDeliveryLocation({ latitude: parseFloat(data[0].lat), longitude: parseFloat(data[0].lon) })
@@ -66,7 +76,8 @@ export default function Checkout() {
 
   const handleProceedToPayment = (e) => {
     e.preventDefault()
-    if (!deliveryAddress.trim() || !deliveryLocation) {
+    const fullAddress = getFullAddress()
+    if (!fullAddress.trim() || !deliveryLocation) {
       return toast.error('Please select a delivery location on the map.')
     }
     if (!contactName.trim() || !contactPhone.trim()) {
@@ -81,12 +92,28 @@ export default function Checkout() {
         longitude: primaryStore?.location?.coordinates[0] || 78.39,
       },
       deliveryLocation: {
-        address: deliveryAddress,
+        address: fullAddress,
+        fullAddress,
+        flatNumber,
+        apartmentName,
+        streetName,
+        landmark,
+        area,
+        city,
         latitude: deliveryLocation.latitude,
         longitude: deliveryLocation.longitude,
       },
       packageDetails: cartItems.map(i => `${i.quantity}x ${i.name} (from ${i.store?.shopName})`).join(', '),
+      commerceItems: cartItems.map(item => ({
+        productName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        category: item.category || 'General'
+      })),
       price: grandTotal,
+      deliveryFee,
+      platformFee,
+      taxAmount,
       paymentMethod: 'online',
       shopId: primaryStore?._id,
       deliveryInstructions: selectedInstruction || instructions,
@@ -145,25 +172,41 @@ export default function Checkout() {
                 <AddressPickerMap defaultPosition={deliveryLocation} onPositionSelect={setDeliveryLocation} />
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-semibold text-gray-700">Complete Address *</label>
+                  <h3 className="text-sm font-semibold text-gray-700">Detailed Address Info</h3>
                   <button
                     type="button"
                     onClick={handleLocateAddress}
                     disabled={locating}
-                    className="text-sm text-primary-600 font-semibold hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-lg transition-colors"
+                    className="text-sm text-primary-600 font-semibold hover:text-primary-700 bg-primary-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
                   >
-                    {locating ? 'Locating...' : '📍 Locate on Map'}
+                    {locating ? 'Locating...' : '📍 Auto-Locate on Map'}
                   </button>
                 </div>
-                <textarea
-                  value={deliveryAddress}
-                  onChange={e => setDeliveryAddress(e.target.value)}
-                  className="input-field min-h-[90px]"
-                  placeholder="Flat 402, Block B, Green Valley Apartments, Madhapur..."
-                  required
-                />
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Flat / House No.</label>
+                    <input type="text" value={flatNumber} onChange={e => setFlatNumber(e.target.value)} className="input-field py-2.5" placeholder="e.g. Flat 402" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Apartment / Building</label>
+                    <input type="text" value={apartmentName} onChange={e => setApartmentName(e.target.value)} className="input-field py-2.5" placeholder="e.g. Green Valley Apts" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Street Name</label>
+                    <input type="text" value={streetName} onChange={e => setStreetName(e.target.value)} className="input-field py-2.5" placeholder="e.g. 1st Main Road" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Landmark (Optional)</label>
+                    <input type="text" value={landmark} onChange={e => setLandmark(e.target.value)} className="input-field py-2.5" placeholder="e.g. Near Apollo Hospital" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Area</label>
+                    <input type="text" value={area} onChange={e => setArea(e.target.value)} className="input-field py-2.5" placeholder="e.g. Madhapur" />
+                  </div>
+                </div>
               </div>
             </motion.div>
 
@@ -294,7 +337,7 @@ export default function Checkout() {
 
               <button
                 onClick={handleProceedToPayment}
-                disabled={!deliveryLocation || !deliveryAddress || !contactName || !contactPhone}
+                disabled={!deliveryLocation || !getFullAddress() || !contactName || !contactPhone}
                 id="proceed-to-payment"
                 className="btn-primary w-full py-4 text-base shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >

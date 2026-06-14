@@ -14,7 +14,7 @@ const STATUS_TABS = [
     id: 'active',
     label: 'Active',
     icon: <Clock size={15} />,
-    statuses: ['pending', 'accepted', 'picked_up', 'out_for_delivery'],
+    statuses: ['PLACED', 'CONFIRMED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'],
     color: 'text-blue-600',
     activeBg: 'bg-blue-50 border-blue-200 text-blue-700',
   },
@@ -22,7 +22,7 @@ const STATUS_TABS = [
     id: 'completed',
     label: 'Completed',
     icon: <CheckCircle2 size={15} />,
-    statuses: ['delivered'],
+    statuses: ['DELIVERED'],
     color: 'text-emerald-600',
     activeBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
   },
@@ -30,7 +30,7 @@ const STATUS_TABS = [
     id: 'cancelled',
     label: 'Cancelled',
     icon: <XCircle size={15} />,
-    statuses: ['cancelled'],
+    statuses: ['CANCELLED'],
     color: 'text-red-500',
     activeBg: 'bg-red-50 border-red-200 text-red-700',
   },
@@ -48,7 +48,7 @@ export default function Orders() {
     return res.data;
   });
 
-  const activeStatuses = ['accepted', 'picked_up', 'out_for_delivery'];
+  const activeStatuses = ['AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY']; // For Agent
 
   const getTabOrders = (tabId) => {
     if (!orders) return [];
@@ -58,6 +58,15 @@ export default function Orders() {
 
   const tabOrders = getTabOrders(tab);
   const activeCount = getTabOrders('active').length;
+  const completedCount = getTabOrders('completed').length;
+  const cancelledCount = getTabOrders('cancelled').length;
+
+  const getCountForTab = (tabId) => {
+    if (tabId === 'active') return activeCount;
+    if (tabId === 'completed') return completedCount;
+    if (tabId === 'cancelled') return cancelledCount;
+    return 0;
+  };
 
   // Agent view keeps separate Active/Past sections
   if (isAgent) {
@@ -111,9 +120,11 @@ export default function Orders() {
           >
             {t.icon}
             {t.label}
-            {t.id === 'active' && activeCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">
-                {activeCount}
+            {getCountForTab(t.id) > 0 && (
+              <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+                tab === t.id ? 'bg-white text-primary-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {getCountForTab(t.id)}
               </span>
             )}
           </button>
@@ -129,10 +140,10 @@ export default function Orders() {
         role="customer"
         emptyMsg={
           tab === 'active'
-            ? "You have no active orders right now. Browse stores to place a new order!"
+            ? { title: '📦 No Active Orders', desc: 'You currently have no active deliveries.' }
             : tab === 'completed'
-            ? "You haven't completed any orders yet."
-            : "You haven't cancelled any orders."
+            ? { title: '🎉 No Completed Orders Yet', desc: 'Orders delivered successfully will appear here.' }
+            : { title: '❌ No Cancelled Orders', desc: 'Cancelled orders will appear here.' }
         }
         showBrowse={tab === 'active'}
       />
@@ -161,17 +172,17 @@ function OrderGrid({ list, isLoading, isError, refetch, emptyMsg, role, showBrow
   }
 
   if (!list || list.length === 0) {
+    const title = typeof emptyMsg === 'object' ? emptyMsg.title : "No Orders Yet";
+    const desc = typeof emptyMsg === 'object' ? emptyMsg.desc : emptyMsg;
+
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="py-20 text-center bg-gray-50 rounded-3xl border border-gray-100 flex flex-col items-center"
       >
-        <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-          <ShoppingBag size={36} className="text-primary-400" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">No Orders Yet</h3>
-        <p className="text-gray-500 text-sm max-w-sm mb-6">{emptyMsg}</p>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
+        <p className="text-gray-500 text-sm max-w-sm mb-6">{desc}</p>
         {showBrowse && (
           <Link to="/stores" className="btn-primary">
             Browse Stores

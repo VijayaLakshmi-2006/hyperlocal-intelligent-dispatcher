@@ -48,8 +48,29 @@ export const createShop = async (req, res) => {
 
 export const getShops = async (req, res) => {
   try {
-    const shops = await Shop.find({ isActive: true }).sort({ rating: -1, createdAt: -1 });
+    const { lat, lng, radius } = req.query;
+    let query = { isActive: true };
 
+    // Geolocation filter
+    if (lat && lng) {
+      const maxDistance = radius ? Number(radius) * 1000 : 5000; // Default 5km radius
+      query.location = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [Number(lng), Number(lat)],
+          },
+          $maxDistance: maxDistance,
+        },
+      };
+      
+      // $near automatically sorts by distance, so we don't apply an explicit sort here.
+      const shops = await Shop.find(query);
+      return res.status(200).json(shops);
+    }
+
+    // Default fallback if no location provided
+    const shops = await Shop.find(query).sort({ rating: -1, createdAt: -1 });
     res.status(200).json(shops);
   } catch (error) {
     res.status(500).json({
