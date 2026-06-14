@@ -49,74 +49,87 @@ export const createOrder = async (req, res) => {
       shopId,
     } = req.body;
 
+    // ── Validate required fields ──────────────────────────────────────────
+    if (!deliveryLocation && !deliveryAddress) {
+      return res.status(400).json({ success: false, message: "Delivery location is required." });
+    }
+
     const normalizedPickup = normalizeAddressLocation(
       pickupLocation,
-      pickupAddress
+      pickupAddress || "Store location"
     );
     const normalizedDelivery = normalizeAddressLocation(
       deliveryLocation,
       deliveryAddress
     );
 
-    if (normalizedPickup.error || normalizedDelivery.error) {
-      return res.status(400).json({
-        message: normalizedPickup.error || normalizedDelivery.error,
-      });
+    if (normalizedPickup.error) {
+      return res.status(400).json({ success: false, message: `Pickup: ${normalizedPickup.error}` });
+    }
+    if (normalizedDelivery.error) {
+      return res.status(400).json({ success: false, message: `Delivery: ${normalizedDelivery.error}` });
     }
 
-    // AI Intelligent Store Selection if shopId not provided
+    // ── AI Intelligent Store Selection if shopId not provided ─────────────
     let finalShopId = shopId;
     let finalPickupLoc = normalizedPickup.value;
-    
+
     if (!finalShopId) {
-      // Find nearest store
-      const nearestShop = await Shop.findOne({
-        isActive: true,
-        location: {
-          $near: {
-            $geometry: toGeoPoint(normalizedDelivery.value),
-            $maxDistance: 5000 // 5km radius
-          }
+      const deliveryGeo = toGeoPoint(normalizedDelivery.value);
+      if (deliveryGeo) {
+        const nearestShop = await Shop.findOne({
+          isActive: true,
+          location: {
+            $near: {
+              $geometry: deliveryGeo,
+              $maxDistance: 5000,
+            },
+          },
+        });
+
+        if (nearestShop) {
+          finalShopId = nearestShop._id;
+          finalPickupLoc = {
+            address: nearestShop.address,
+            latitude: nearestShop.location.coordinates[1],
+            longitude: nearestShop.location.coordinates[0],
+          };
         }
-      });
-      
-      if (nearestShop) {
-        finalShopId = nearestShop._id;
-        finalPickupLoc = {
-          address: nearestShop.address,
-          latitude: nearestShop.location.coordinates[1],
-          longitude: nearestShop.location.coordinates[0],
-        };
       }
     }
 
     const closestAgent = await findClosestAvailableAgent(finalPickupLoc);
 
-    const order = await Order.create({
+    const orderData = {
       customer: req.user._id,
-      assignedAgent: null, // Don't assign right away, wait for simulated assignment
+      assignedAgent: null,
       pickupAddress: finalPickupLoc.address,
       deliveryAddress: normalizedDelivery.value.address,
       pickupLocation: finalPickupLoc,
       deliveryLocation: normalizedDelivery.value,
-      pickupGeoLocation: toGeoPoint(finalPickupLoc),
-      deliveryGeoLocation: toGeoPoint(normalizedDelivery.value),
-      packageDetails,
+      packageDetails: packageDetails || "Delivery Package",
       commerceItems: commerceItems || [],
-      price,
+      price: price || 0,
       deliveryFee: deliveryFee || 0,
       platformFee: platformFee || 0,
       taxAmount: taxAmount || 0,
-      paymentMethod,
+      paymentMethod: paymentMethod || "cash",
       shop: finalShopId || null,
       status: "PLACED",
-    });
+    };
 
+    const pGeo = toGeoPoint(finalPickupLoc);
+    if (pGeo) orderData.pickupGeoLocation = pGeo;
+
+    const dGeo = toGeoPoint(normalizedDelivery.value);
+    if (dGeo) orderData.deliveryGeoLocation = dGeo;
+
+    const order = await Order.create(orderData);
     const fullOrder = await populateOrder(Order.findById(order._id));
 
-    emitSocketEvent("orderCreated", {
-      order: fullOrder,
-    }, ["admin:dashboard", `order:${order._id}`]);
+    console.log(`[Order] Created: ${order._id} for customer ${req.user._id}`);
+
+    emitSocketEvent("orderCreated", { order: fullOrder }, ["admin:dashboard", `order:${order._id}`]);
 
     if (closestAgent) {
       closestAgent.isAvailable = false;
@@ -136,23 +149,22 @@ export const createOrder = async (req, res) => {
     }
 
     res.status(201).json({
+      success: true,
       message: closestAgent
         ? "Order Created And Assigned To Nearby Agent"
-        : "Order Created Successfully, No Nearby Agent Available",
+        : "Order Created Successfully",
+      orderId: order._id,
       order: fullOrder,
-      assignment: closestAgent
-        ? {
-            agent: closestAgent,
-            radiusMeters: getAgentSearchRadiusMeters(),
-          }
-        : {
-            agent: null,
-            radiusMeters: getAgentSearchRadiusMeters(),
-          },
+      assignment: {
+        agent: closestAgent || null,
+        radiusMeters: getAgentSearchRadiusMeters(),
+      },
     });
   } catch (error) {
+    console.error("Create Order Error:", error);
     res.status(500).json({
-      message: error.message,
+      success: false,
+      message: error.message || "Internal server error while creating order.",
     });
   }
 };
@@ -394,6 +406,7 @@ export const trackOrder = async (req, res) => {
       socketRoom: `order:${order._id}`,
     });
   } catch (error) {
+    console.error("Order creation error:", error);
     res.status(500).json({
       message: error.message,
     });

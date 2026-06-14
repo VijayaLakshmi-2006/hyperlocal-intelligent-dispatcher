@@ -103,6 +103,17 @@ export default function OrderTracking() {
           <div className="space-y-6 lg:pr-2 pb-20 lg:pb-0">
             
             {/* ETA Section */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-amber-900 text-lg flex items-center gap-2">
+                  <span className="text-2xl">⚡</span> Guaranteed Fast Delivery
+                </h3>
+                <p className="text-amber-800 font-medium mt-1">Expected Arrival: <span className="font-black">5–7 Minutes</span></p>
+              </div>
+              <div className="text-amber-600 font-mono animate-pulse font-bold text-xl">
+                06:42
+              </div>
+            </div>
             <ETASection distanceKm={distanceKm} etaMinutes={etaMinutes} status={orderStatus} />
 
             {/* Timeline */}
@@ -189,6 +200,29 @@ export default function OrderTracking() {
                 </div>
               </div>
             </div>
+
+            {/* Cancel Order Section */}
+            {!isAgent && !['delivered', 'cancelled'].includes(orderStatus) && (
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    const isAssigned = !!agentDetails;
+                    const message = isAssigned 
+                      ? 'Cancellation may incur charges. Are you sure you want to cancel this order?' 
+                      : 'Are you sure you want to cancel this order?';
+                    if (window.confirm(message)) {
+                      handleStatusUpdate('cancelled');
+                    }
+                  }}
+                  className="w-full py-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                >
+                  Cancel Entire Order
+                </button>
+                {!!agentDetails && (
+                  <p className="text-center text-xs text-gray-500 mt-2">Cancellation may incur charges as a delivery partner is already assigned.</p>
+                )}
+              </div>
+            )}
 
           </div>
         </div>

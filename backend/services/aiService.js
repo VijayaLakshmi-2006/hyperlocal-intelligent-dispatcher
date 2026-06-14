@@ -102,18 +102,18 @@ const parseOutputText = (data) => {
 export const analyzeCommerceIntent = async (query) => {
   if (!process.env.OPENAI_API_KEY) return buildFallbackIntent(query);
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-5.2-mini",
-        input: [{ role: "system", content: "Extract hyperlocal commerce intent. Return concise normalized product data, urgency, budget, quantity, useful product keywords, and safe alternatives." }, { role: "user", content: query }],
-        text: { format: { type: "json_schema", name: "commerce_intent", strict: true, schema: COMMERCE_SCHEMA } },
+        model: process.env.OPENAI_MODEL || "llama3-8b-8192",
+        messages: [{ role: "system", content: "Extract hyperlocal commerce intent. Return concise normalized product data, urgency, budget, quantity, useful product keywords, and safe alternatives. Respond ONLY with JSON matching this schema: " + JSON.stringify(COMMERCE_SCHEMA) }, { role: "user", content: query }],
+        response_format: { type: "json_object" },
       }),
     });
-    if (!response.ok) throw new Error(`OpenAI request failed with ${response.status}`);
+    if (!response.ok) throw new Error(`Groq request failed with ${response.status}`);
     const data = await response.json();
-    const parsed = JSON.parse(parseOutputText(data));
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
     return { ...buildFallbackIntent(query), ...parsed, product: parsed.product || buildFallbackIntent(query).product, category: parsed.category || buildFallbackIntent(query).category, urgency: parsed.urgency || detectUrgency(query), source: "openai" };
   } catch (error) {
     return { ...buildFallbackIntent(query), source: "fallback", aiError: error.message };
@@ -147,11 +147,11 @@ const getGeminiClient = () => {
 const callOpenAI = async (systemPrompt, userMessage) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'llama3-8b-8192',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },

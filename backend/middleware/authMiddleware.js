@@ -19,6 +19,12 @@ const protect = async (req, res, next) => {
       // get user from DB
       req.user = await User.findById(decoded.id).select("-password");
 
+      if (!req.user) {
+        return res.status(401).json({
+          message: "User no longer exists",
+        });
+      }
+
       next();
     } else {
       res.status(401).json({
@@ -32,8 +38,11 @@ const protect = async (req, res, next) => {
   }
 };
 
-const authorizeRoles = (...roles) => {    //rest operator(parameters) to get multiple roles as array
+const authorizeRoles = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     // check role allowed
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({

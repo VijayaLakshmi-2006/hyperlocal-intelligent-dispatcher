@@ -40,18 +40,23 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="max-w-2xl"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-700 font-semibold text-sm mb-6 border border-primary-200">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-                </span>
-                Live Real-Time Tracking
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-800 font-bold text-sm border border-amber-200 shadow-sm">
+                  ⚡ Delivery in 5–7 Minutes
+                </div>
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-100 text-primary-700 font-semibold text-sm border border-primary-200">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                  </span>
+                  Live Real-Time Tracking
+                </div>
               </div>
               <h1 className="text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.1] mb-6">
                 Delivery <span className="gradient-text">Reimagined</span> for Local Business
               </h1>
               <p className="text-xl text-gray-600 mb-10 leading-relaxed font-light">
-                HyperDispatch connects you to the fastest delivery network. Track your orders live on the map with AI route optimization and sub-30 minute ETA.
+                HyperDispatch connects you to the fastest delivery network. Track your orders live on the map with AI route optimization and an ultra-fast 5-7 minute delivery promise.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 {isAuthenticated ? (
@@ -81,7 +86,7 @@ export default function Home() {
                 </div>
                 <div className="w-px h-12 bg-gray-200"></div>
                 <div className="flex flex-col">
-                  <span className="text-3xl font-black text-gray-900">&lt;30m</span>
+                  <span className="text-3xl font-black text-gray-900">5-7m</span>
                   <span className="text-sm font-medium">Average ETA</span>
                 </div>
                 <div className="w-px h-12 bg-gray-200"></div>

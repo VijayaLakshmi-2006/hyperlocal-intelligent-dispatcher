@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Tag } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function CartDrawer({ isOpen, onClose }) {
   const {
@@ -45,8 +46,8 @@ export default function CartDrawer({ isOpen, onClose }) {
                   <ShoppingBag size={18} className="text-primary-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">Your Cart</h2>
-                  <p className="text-xs text-gray-500">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</p>
+                  <h2 className="text-lg font-bold text-gray-900">Your Cart ({cartItems.length} {cartItems.length === 1 ? 'Item' : 'Items'})</h2>
+                  <p className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-0.5">⚡ Estimated Delivery: 5–7 Minutes</p>
                 </div>
               </div>
               <button
@@ -119,39 +120,40 @@ export default function CartDrawer({ isOpen, onClose }) {
                            item.category === 'Main Course' ? '🍛' : '📦'}
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">{item.name}</h4>
-                          <p className="text-[11px] text-gray-500 mt-0.5 font-medium">{item.store?.shopName}</p>
-                          <p className="text-primary-600 font-bold text-sm mt-1">₹{item.price}</p>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl p-0.5 shadow-sm">
-                            <button
-                              onClick={() => updateQuantity(item._id, -1)}
-                              id={`decrease-${item._id}`}
-                              className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-primary-600 rounded-lg transition-colors"
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <span className="w-5 text-center text-sm font-bold text-gray-900">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item._id, 1)}
-                              id={`increase-${item._id}`}
-                              className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-primary-600 hover:text-white rounded-lg transition-colors"
-                            >
-                              <Plus size={12} />
-                            </button>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">{item.name}</h4>
+                              <p className="text-[11px] text-gray-500 mt-0.5 font-medium">{item.store?.shopName}</p>
+                              <p className="text-primary-600 font-bold text-sm mt-1">₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl p-0.5 shadow-sm shrink-0">
+                              <button
+                                onClick={() => updateQuantity(item._id, -1)}
+                                id={`decrease-${item._id}`}
+                                className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-primary-600 rounded-lg transition-colors"
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <span className="w-5 text-center text-sm font-bold text-gray-900">{item.quantity}</span>
+                              <button
+                                onClick={() => updateQuantity(item._id, 1)}
+                                id={`increase-${item._id}`}
+                                className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-primary-600 hover:text-white rounded-lg transition-colors"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-800">₹{item.price * item.quantity}</span>
-                            <button
-                              onClick={() => removeFromCart(item._id)}
-                              id={`remove-${item._id}`}
-                              className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 size={13} />
+                          <div className="flex items-center gap-3 mt-2 pt-3 border-t border-gray-100 text-xs font-semibold">
+                            <button onClick={() => { if(window.confirm('Are you sure you want to remove this item?')) removeFromCart(item._id) }} className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors">
+                              <Trash2 size={14} /> Remove
+                            </button>
+                            <button onClick={() => { const reason = window.prompt('Reason for cancelling this item? (optional)'); if(reason !== null) removeFromCart(item._id) }} className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors">
+                              Cancel Item
+                            </button>
+                            <button onClick={() => { toast.success('Saved for later!'); removeFromCart(item._id); }} className="flex items-center gap-1 text-gray-500 hover:text-primary-600 transition-colors ml-auto">
+                              ♡ Save
                             </button>
                           </div>
                         </div>
@@ -166,22 +168,27 @@ export default function CartDrawer({ isOpen, onClose }) {
             {cartItems.length > 0 && (
               <div className="border-t border-gray-100 bg-white px-6 py-5 shadow-[0_-10px_40px_rgba(0,0,0,0.06)]">
                 {/* Fee Rows */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm text-gray-500">
+                <div className="space-y-2 mb-4 text-sm">
+                  <h3 className="font-bold text-gray-900 mb-3 border-b border-gray-100 pb-2">Price Details</h3>
+                  <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
                     <span>₹{subtotal}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-500">
+                  <div className="flex justify-between text-gray-600">
                     <span>Delivery Fee</span>
-                    <span className={deliveryFee === 0 ? 'text-emerald-600 font-semibold' : ''}>
+                    <span className={deliveryFee === 0 ? 'text-emerald-600 font-bold' : ''}>
                       {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>Platform Fee + GST</span>
-                    <span>₹{platformFee + taxAmount}</span>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Platform Fee</span>
+                    <span>₹{platformFee}</span>
                   </div>
-                  <div className="flex justify-between text-lg font-black text-gray-900 pt-2 border-t border-gray-100 mt-1">
+                  <div className="flex justify-between text-gray-600">
+                    <span>GST</span>
+                    <span>₹{taxAmount}</span>
+                  </div>
+                  <div className="flex justify-between text-2xl font-black text-gray-900 pt-3 border-t border-gray-100 mt-2">
                     <span>Grand Total</span>
                     <span>₹{grandTotal}</span>
                   </div>

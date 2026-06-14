@@ -9,7 +9,7 @@ export default function App() {
     <AuthProvider>
       <NotificationProvider>
         <CartProvider>
-          <Router>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AppRoutes />
           </Router>
         </CartProvider>
