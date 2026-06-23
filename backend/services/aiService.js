@@ -1,8 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import Product from '../models/Product.js';
 
 export const parseShoppingPrompt = async (prompt) => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   let parsedResult;
 
   // Fetch full inventory to provide perfect context for the AI
@@ -14,15 +14,11 @@ export const parseShoppingPrompt = async (prompt) => {
   }));
 
   if (!apiKey) {
-    throw new Error('No API Key present in environment');
+    throw new Error('No GROQ_API_KEY present in environment');
   }
 
   try {
-    const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ 
-      model: 'gemini-3.5-flash',
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    const groq = new Groq({ apiKey });
 
     const systemPrompt = `
 You are an advanced hyperlocal shopping and health assistant (ChatGPT + Instamart + Zepto + Pharmacy Assistant).
@@ -72,11 +68,16 @@ Return ONLY a valid JSON object matching this schema EXACTLY:
 }
     `;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nUser Request: "${prompt}"` }] }]
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `User Request: "${prompt}"` }
+      ],
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' }
     });
 
-    const responseText = result.response.text().trim();
+    const responseText = chatCompletion.choices[0]?.message?.content || "";
     const match = responseText.match(/\{[\s\S]*\}/);
     const cleanJson = match ? match[0] : responseText;
     parsedResult = JSON.parse(cleanJson);
@@ -84,7 +85,7 @@ Return ONLY a valid JSON object matching this schema EXACTLY:
   } catch (error) {
     console.error('Gemini API call or JSON Parse failed:', error);
     if (error.response) console.error(error.response);
-    
+
     parsedResult = {
       intent: 'Grocery Purchase',
       confidenceScore: 0.1,
