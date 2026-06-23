@@ -20,7 +20,7 @@ export const parseShoppingPrompt = async (prompt) => {
   try {
     const ai = new GoogleGenerativeAI(apiKey);
     const model = ai.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       generationConfig: { responseMimeType: "application/json" }
     });
 
