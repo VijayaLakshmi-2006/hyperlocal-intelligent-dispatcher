@@ -10,22 +10,21 @@ router.post('/search', protect, searchPrompt);
 router.get('/history', protect, getSearchHistory);
 router.get('/debug', async (req, res) => {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const prompt = 'Chicken Biryani for 4 people';
-    
-    // Let's do a direct test of Gemini API here to see the error
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const apiKey = process.env.GROQ_API_KEY;
+
+    // Let's do a direct test of Groq API here
+    const { default: Groq } = await import('groq-sdk');
     if (!apiKey) {
-      return res.json({ success: false, error: 'GEMINI_API_KEY environment variable is missing' });
+      return res.json({ success: false, error: 'GROQ_API_KEY environment variable is missing' });
     }
-    
-    const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-3.5-flash' });
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: 'Respond with "success"' }] }]
+
+    const groq = new Groq({ apiKey });
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: 'Respond with "success"' }],
+      model: 'llama-3.3-70b-versatile'
     });
-    
-    const responseText = result.response.text();
+
+    const responseText = chatCompletion.choices[0]?.message?.content || "";
     return res.json({
       success: true,
       apiKeyPresent: !!apiKey,
@@ -35,7 +34,7 @@ router.get('/debug', async (req, res) => {
   } catch (err) {
     return res.json({
       success: false,
-      apiKeyPresent: !!process.env.GEMINI_API_KEY,
+      apiKeyPresent: !!process.env.GROQ_API_KEY,
       error: err.message,
       stack: err.stack
     });
