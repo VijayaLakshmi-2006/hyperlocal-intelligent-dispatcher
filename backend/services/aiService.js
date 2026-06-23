@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import Product from '../models/Product.js';
 
 export const parseShoppingPrompt = async (prompt) => {
-  const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyBvkS8S9yEjsnsQhmvmysjMOMX-1HzAuog';
+  const apiKey = process.env.GEMINI_API_KEY;
   let parsedResult;
 
   // Fetch full inventory to provide perfect context for the AI
